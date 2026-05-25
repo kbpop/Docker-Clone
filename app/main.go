@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"log"
 )
 
 // Ensures gofmt doesn't remove the imports above (feel free to remove this!)
