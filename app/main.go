@@ -25,13 +25,14 @@ func main() {
 	cmd.Stderr = os.Stderr // create error pipe for Go collection
 
 	output, err := cmd.Output()
-	if err != nil {
+	if err != nil {	
 		fmt.Printf("Err: %v", err)
 
 		if exitError, ok := err.(*exec.ExitError); ok {
 			os.Exit(exitError.ExitCode())
-		}
-		os.Exit(1)
+		} else {
+			os.Exit(1)
+		} 
 	}	
 	
 	fmt.Print(string(output))
