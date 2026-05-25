@@ -27,5 +27,5 @@ func main() {
 		os.Exit(1)
 	}
 	
-	fmt.Printf(string(output))
+	fmt.Print(string(output))
 }
