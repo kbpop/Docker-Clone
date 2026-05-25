@@ -11,17 +11,7 @@ import (
 var _ = os.Args
 var _ = exec.Command
 
-// Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
-func main() {
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
-	// fmt.Println("Logs from your program will appear here!")
-
-	command := os.Args[3]
-	args := os.Args[4:len(os.Args)]
-	
-
-	// isolate filesystem 
-
+func readDir(){
 	entries, err := os.ReadDir(".")
 	if err != nil {
 		log.Fatal(err)
@@ -34,6 +24,21 @@ func main() {
 			fmt.Println("[FILE]", entry.Name())
 		}
 	}
+}
+
+// Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
+func main() {
+	// You can use print statements as follows for debugging, they'll be visible when running tests.
+	// fmt.Println("Logs from your program will appear here!")
+
+	command := os.Args[3]
+	args := os.Args[4:len(os.Args)]
+	
+
+	// isolate filesystem 
+	// below should not show up
+	readDir()
+
 
 
 
