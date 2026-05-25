@@ -29,7 +29,6 @@ func readDir(){
 
 func isolateDir(){
 	// isolation step
-	newRoot := "/temp"
 
 	// create and change to directory 
 	if err := syscall.Chdir(newRoot); err != nil {
@@ -57,11 +56,12 @@ func (nullWriter) Write(p []byte) (n int, err error) { return len(p), nil }
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	// fmt.Println("Logs from your program will appear here!")
+	jailpath := "/tmp/docker_jail"
+
+	os.MkdirAll(jailpath, 0755)
 
 	command := os.Args[3]
 	args := os.Args[4:len(os.Args)]
-	
-
 	
 	// isolate filesystem 
 	// before isolation
@@ -77,7 +77,11 @@ func main() {
 
 	cmd := exec.Command(command, args...)
 
-	cmd.Stderr = os.Stderr // create error pipe for Go collection
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Chroot: jailpath,
+	}
+
+	// cmd.Stderr = os.Stderr // create error pipe for Go collection
 
 	// create dummy variables for piping
 	cmd.Stdin = nullReader{}
