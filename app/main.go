@@ -30,7 +30,7 @@ func main() {
 
 		if exitError, ok := err.(*exec.ExitError); ok {
 			os.Exit(exitError.ExitCode())
-		} else {
+		} else if !ok {
 			os.Exit(1)
 		} 
 	}	
