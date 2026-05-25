@@ -29,7 +29,7 @@ func main() {
 		fmt.Printf("Err: %v", err)
 
 		if exitError, ok := err.(*exec.ExitError); ok {
-			return exitError.ExitCode()
+			os.Exit(exitError.ExitCode())
 		}
 		os.Exit(1)
 	}	
