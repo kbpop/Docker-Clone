@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"log"
+	"syscall"
 )
 
 // Ensures gofmt doesn't remove the imports above (feel free to remove this!)
@@ -36,10 +37,30 @@ func main() {
 	
 
 	// isolate filesystem 
-	// below should not show up
+
+	// before isolation
 	readDir()
 
+	// isolation step
+	newRoot = "/temp"
 
+	// create and change to directory 
+	if err := syscall.Chdir(newRoot); err != nil {
+		fmt.Println("Chdir error: %v", err)
+	}
+
+	// Create chroot jail
+	if err := syscall.Chroot(newRoot); err != nil {
+		fmt.Println("Chroot error: %v", err)
+	}
+
+	// change dir to "/" of new root
+	if err := syscall.Chdir(newRoot); err != nil {
+		fmt.Println("Chdir error: %v", err)
+	}
+
+	// after isolation
+	readDir()
 
 
 	cmd := exec.Command(command, args...)
