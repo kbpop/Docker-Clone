@@ -60,6 +60,16 @@ func main() {
 
 	// copy over bin now
 
+	// open file to copy over
+	file, err := os.Open(command); err != nil {
+		fmt.Printf("Err: %v", err)
+	}
+	// close file later
+	defer file.Close()
+	bytes, err := io.Copy(targetDir, command)
+	if err != nil {
+		panic(err)
+	}
 
 	output, err := cmd.Output()
 	if err != nil {	
