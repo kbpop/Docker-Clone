@@ -55,6 +55,7 @@ func main() {
 	// create local files that the command needs	
 	newpath := filepath.Join(jailpath, command)
 	targetDir := filepath.Dir(newpath)
+	fmt.Println("creating: %s", targetDir)
 	os.MkdirAll(targetDir, 0755)
 
 	// copy over bin now
