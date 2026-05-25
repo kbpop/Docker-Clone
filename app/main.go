@@ -62,9 +62,7 @@ func main() {
 	args := os.Args[4:len(os.Args)]
 	
 
-	cmd.Stdin = nullReader{}
- 	cmd.Stdout = nullWriter{}
- 	cmd.Stderr = nullWriter{}
+	
 	// isolate filesystem 
 	// before isolation
 	println("Before Isolation:")
@@ -80,6 +78,12 @@ func main() {
 	cmd := exec.Command(command, args...)
 
 	cmd.Stderr = os.Stderr // create error pipe for Go collection
+
+	// create dummy variables for piping
+	cmd.Stdin = nullReader{}
+ 	cmd.Stdout = nullWriter{}
+ 	cmd.Stderr = nullWriter{}
+
 
 	output, err := cmd.Output()
 	if err != nil {	
