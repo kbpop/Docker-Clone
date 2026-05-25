@@ -58,12 +58,14 @@ func main() {
 
 	// isolate filesystem 
 	// before isolation
+	println("Before Isolation:")
 	readDir()
 
 	// Isolate Directory
 	isolateDir()	
 
 	// after isolation
+	println("After Isolation:")
 	readDir()
 
 	cmd := exec.Command(command, args...)
