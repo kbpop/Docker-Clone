@@ -31,5 +31,5 @@ func main() {
 	}	
 	
 	fmt.Print(string(output))
-	return cmd;
+	return err
 }
