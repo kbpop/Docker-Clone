@@ -56,7 +56,7 @@ func main() {
 	// create local files that the command needs	
 	newpath := filepath.Join(jailpath, command)
 	targetDir := filepath.Dir(newpath)
-	fmt.Println("creating: %s", targetDir)
+	fmt.Printf("creating: %s", targetDir)
 	os.MkdirAll(targetDir, 0755)
 
 	// copy over bin now
@@ -65,6 +65,7 @@ func main() {
 	srcFile, err := os.Open(command)
 	if err != nil {
 		fmt.Printf("Err: %v", err)
+		os.exit(1)
 	}
 	defer srcFile.Close() // close file for later
 
@@ -77,6 +78,14 @@ func main() {
 	defer destFile.Close() // close file for later
 
 	bytes, err := io.Copy(destFile, srcFile)
+	if err != nil {
+		panic(err)
+	}
+
+	// assign local file permissions to new file 
+	fileInfo, err := os.Stat(command)
+	err := os.Chmod(targetDir, fileInfo.Mode().Perm())
+
 	if err != nil {
 		panic(err)
 	}
