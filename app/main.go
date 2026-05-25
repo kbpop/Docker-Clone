@@ -77,7 +77,7 @@ func main() {
 	}
 	defer destFile.Close() // close file for later
 
-	bytes, err := io.Copy(destFile, srcFile)
+	_, err := io.Copy(destFile, srcFile)
 	if err != nil {
 		panic(err)
 	}
