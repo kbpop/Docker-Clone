@@ -61,7 +61,7 @@ func main() {
 	readDir()
 
 	// Isolate Directory
-	isolateDir()	
+	// isolateDir()	
 
 	// after isolation
 	readDir()
