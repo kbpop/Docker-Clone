@@ -29,7 +29,7 @@ func readDir(){
 
 func isolateDir(){
 	// isolation step
-	newRoot = "/temp"
+	newRoot := "/temp"
 
 	// create and change to directory 
 	if err := syscall.Chdir(newRoot); err != nil {
@@ -61,7 +61,7 @@ func main() {
 	readDir()
 
 	// Isolate Directory
-	// isolateDir()	
+	isolateDir()	
 
 	// after isolation
 	readDir()
