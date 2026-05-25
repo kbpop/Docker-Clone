@@ -15,11 +15,27 @@ func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	// fmt.Println("Logs from your program will appear here!")
 
-	// Uncomment this block to pass the first stage!
-	
 	command := os.Args[3]
 	args := os.Args[4:len(os.Args)]
 	
+
+	// isolate filesystem 
+
+	entries, err := os.ReadDir(".")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			fmt.Println("[DIR]", entry.Name())
+		} else {
+			fmt.Println("[FILE]", entry.Name())
+		}
+	}
+
+
+
 	cmd := exec.Command(command, args...)
 
 	cmd.Stderr = os.Stderr // create error pipe for Go collection
