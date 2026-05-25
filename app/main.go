@@ -27,19 +27,7 @@ func readDir(){
 	}
 }
 
-// Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
-func main() {
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
-	// fmt.Println("Logs from your program will appear here!")
-
-	command := os.Args[3]
-	args := os.Args[4:len(os.Args)]
-	
-
-	// isolate filesystem 
-	// before isolation
-	readDir()
-
+func isolateDir(){
 	// isolation step
 	newRoot = "/temp"
 
@@ -57,10 +45,26 @@ func main() {
 	if err := syscall.Chdir(newRoot); err != nil {
 		fmt.Println("Chdir error: %v", err)
 	}
+}
+
+// Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
+func main() {
+	// You can use print statements as follows for debugging, they'll be visible when running tests.
+	// fmt.Println("Logs from your program will appear here!")
+
+	command := os.Args[3]
+	args := os.Args[4:len(os.Args)]
+	
+
+	// isolate filesystem 
+	// before isolation
+	readDir()
+
+	// Isolate Directory
+	isolateDir()	
 
 	// after isolation
 	readDir()
-
 
 	cmd := exec.Command(command, args...)
 
