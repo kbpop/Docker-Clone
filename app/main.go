@@ -21,6 +21,9 @@ func main() {
 	args := os.Args[4:len(os.Args)]
 	
 	cmd := exec.Command(command, args...)
+
+	cmd.Stderr = os.Stderr // not sure why to add this
+
 	output, err := cmd.Output()
 	if err != nil {
 		fmt.Printf("Err: %v", err)
