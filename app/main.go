@@ -43,11 +43,19 @@ func main() {
 
 	cmd := exec.Command(command, args...)
 
+	// Give the child process the jailpath
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Chroot: jailpath,
 	}
 
 	cmd.Stderr = os.Stderr // create error pipe for Go collection
+
+	// allocate files to jailpath
+	newpath = filepath.Join(jailpath, filepath.Dir(cmd))
+	os.MkdirAll(newpath, 0755)
+
+	// copy over bin
+
 
 	output, err := cmd.Output()
 	if err != nil {	
