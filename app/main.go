@@ -27,7 +27,7 @@ func main() {
 	output, err := cmd.Output()
 	if err != nil {
 		fmt.Printf("Err: %v", err)
-		os.Exit(1)
+		os.Exit(err)
 	}	
 	
 	fmt.Print(string(output))
