@@ -53,8 +53,8 @@ func main() {
 	cmd.Stderr = os.Stderr // create error pipe for Go collection
 
 	// create local files that the command needs	
-	newpath = filepath.Join(jailpath, command)
-	targetDir = filepath.Dir(newpath)
+	newpath := filepath.Join(jailpath, command)
+	targetDir := filepath.Dir(newpath)
 	os.MkdirAll(targetDir, 0755)
 
 	// copy over bin now
