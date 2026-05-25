@@ -81,13 +81,7 @@ func main() {
 		Chroot: jailpath,
 	}
 
-	// cmd.Stderr = os.Stderr // create error pipe for Go collection
-
-	// create dummy variables for piping
-	cmd.Stdin = nullReader{}
- 	cmd.Stdout = nullWriter{}
- 	cmd.Stderr = nullWriter{}
-
+	cmd.Stderr = os.Stderr // create error pipe for Go collection
 
 	output, err := cmd.Output()
 	if err != nil {	
