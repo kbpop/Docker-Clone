@@ -27,31 +27,6 @@ func readDir(){
 	}
 }
 
-func isolateDir(){
-	// isolation step
-
-	// create and change to directory 
-	if err := syscall.Chdir(newRoot); err != nil {
-		fmt.Println("Chdir error: %v", err)
-	}
-
-	// Create chroot jail
-	if err := syscall.Chroot(newRoot); err != nil {
-		fmt.Println("Chroot error: %v", err)
-	}
-
-	// change dir to "/" of new root
-	if err := syscall.Chdir(newRoot); err != nil {
-		fmt.Println("Chdir error: %v", err)
-	}
-}
-
-type nullReader struct{}
-type nullWriter struct{}
- 
-func (nullReader) Read(p []byte) (n int, err error)  { return len(p), nil }
-func (nullWriter) Write(p []byte) (n int, err error) { return len(p), nil }
-
 // Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -65,15 +40,6 @@ func main() {
 	
 	// isolate filesystem 
 	// before isolation
-	println("Before Isolation:")
-	readDir()
-
-	// Isolate Directory
-	isolateDir()	
-
-	// after isolation
-	println("After Isolation:")
-	readDir()
 
 	cmd := exec.Command(command, args...)
 
