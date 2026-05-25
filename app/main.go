@@ -53,7 +53,7 @@ func main() {
 	cmd.Stderr = os.Stderr // create error pipe for Go collection
 
 	// allocate files to jailpath
-	newpath = filepath.Join(jailpath, filepath.Dir(cmd))
+	newpath = filepath.Join(jailpath, "/")
 	os.MkdirAll(newpath, 0755)
 
 	// copy over bin
