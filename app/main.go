@@ -42,6 +42,7 @@ func main() {
 	// isolate filesystem 
 	// before isolation
 
+	fmt.Println("executing: %s", command)
 	cmd := exec.Command(command, args...)
 
 	// Give the child process the jailpath
