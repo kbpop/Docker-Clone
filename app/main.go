@@ -47,6 +47,12 @@ func isolateDir(){
 	}
 }
 
+type nullReader struct{}
+type nullWriter struct{}
+ 
+func (nullReader) Read(p []byte) (n int, err error)  { return len(p), nil }
+func (nullWriter) Write(p []byte) (n int, err error) { return len(p), nil }
+
 // Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -56,6 +62,9 @@ func main() {
 	args := os.Args[4:len(os.Args)]
 	
 
+	cmd.Stdin = nullReader{}
+ 	cmd.Stdout = nullWriter{}
+ 	cmd.Stderr = nullWriter{}
 	// isolate filesystem 
 	// before isolation
 	println("Before Isolation:")
