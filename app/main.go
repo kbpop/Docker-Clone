@@ -42,7 +42,7 @@ func main() {
 	// isolate filesystem 
 	// before isolation
 
-	fmt.Println("executing: %s", command)
+	fmt.Printf("executing: %s", command)
 	cmd := exec.Command(command, args...)
 
 	// Give the child process the jailpath
@@ -60,13 +60,22 @@ func main() {
 
 	// copy over bin now
 
-	// open file to copy over
-	file, err := os.Open(command); err != nil {
+	// file to read from in current local dir
+	srcFile, err := os.Open(command)
+	if err != nil {
 		fmt.Printf("Err: %v", err)
 	}
-	// close file later
-	defer file.Close()
-	bytes, err := io.Copy(targetDir, command)
+	defer srcFile.Close() // close file for later
+
+	// file to write to
+	destFile, err := os.Create(newpath)
+	if err != nil {
+		fmt.Printf("Err creating destination file: %v\n", err)
+		os.Exit(1)
+	}
+	defer destFile.Close() // close file for later
+
+	bytes, err := io.Copy(destFile, srcFile)
 	if err != nil {
 		panic(err)
 	}
