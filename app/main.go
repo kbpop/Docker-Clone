@@ -121,6 +121,9 @@ func parentMode(){
 	}
 
 	if err := cmd.Run(); err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			os.Exit(exitError.ExitCode())
+		}
 		os.Exit(1)
 	}
 	
