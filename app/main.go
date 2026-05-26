@@ -88,10 +88,10 @@ func isolateFs(jailpath string, command string){
 	srcFile.Close()
 }
 
-func isolateProc(jailpath string){
+func isolateProc(){
 
 	// create where proc filesystem will live
-	procdir := filepath.Join(jailpath, "/dir/")
+	procdir := "/proc"
 	os.MkdirAll(procdir, 0755)
 
 	src := "proc" // no actual hardware associated so dummy name
@@ -147,7 +147,7 @@ func childMode(){
 		log.Fatalf("Chdir error: %v", err)
 	}
 
-	isolateProc(jailpath)
+	isolateProc()
 
 	cmd := exec.Command(command, args...)
 
