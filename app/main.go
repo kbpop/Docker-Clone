@@ -118,16 +118,16 @@ func main() {
 	jailpath := "/tmp/docker_jail"
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Chroot: jailpath, // used for filesystem isolation
-		Cloneflags: syscall.CLONE_NEWUSER | syscall.CLONE_NEWPID,
+		Cloneflags: syscall.CLONE_NEWPID,
 	}
 
 	isolateFs(jailpath, command)
-	isolateProc(jailpath)
 
 	cmd.Stdout = os.Stdout // create standard output for child process to talk through
 	cmd.Stderr = os.Stderr // create error output for child process to talk through
 
 	err := cmd.Run()
+	isolateProc(jailpath)
 	if err != nil {	
 		 // fmt.Printf("Err: %v", err)
 		if exitError, ok := err.(*exec.ExitError); ok {
