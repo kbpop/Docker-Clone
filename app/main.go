@@ -104,6 +104,7 @@ func main() {
 	}
 
 	isolateFs(jailpath, command)
+	printPid()
 
 	cmd.Stdout = os.Stdout // create standard output for child process to talk through
 	cmd.Stderr = os.Stderr // create error output for child process to talk through
