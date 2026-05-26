@@ -51,6 +51,7 @@ func main() {
 		Chroot: jailpath,
 	}
 
+	cmd.Stderr = os.Stdout // create standard output for process
 	cmd.Stderr = os.Stderr // create error pipe for Go collection
 
 	// create local files that the command needs	
