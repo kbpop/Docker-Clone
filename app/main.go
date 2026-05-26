@@ -133,6 +133,9 @@ func childMode(){
 	// create command executable
 	cmd := exec.Command(command, args...)
 
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
 	// isolate filesystem 
 	jailpath := "/tmp/docker_jail"
 
