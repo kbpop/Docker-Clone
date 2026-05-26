@@ -186,7 +186,8 @@ func main() {
 
 	// 2. Setup your isolated filesystem (keep your existing isolateFs function!)
 	// Assuming isolateFs returns the path to the new root directory:
-	jailPath := isolateFs(command) 
+	jailpath := "/tmp/docker_jail"
+	jailPath := isolateFs(jailpath, command) 
 
 	// 3. Prepare the command
 	cmd := exec.Command(command, args...)
