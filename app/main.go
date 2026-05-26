@@ -31,16 +31,12 @@ func readDir(){
 
 // isolate filesystem 
 func isolateFs(jailpath string, command string){
-	os.MkdirAll(jailpath, 0755)
-
 	// create local files that the command needs	
 	newpath := filepath.Join(jailpath, command)
 	targetDir := filepath.Dir(newpath)
-	// fmt.Printf("creating: %s", targetDir)
 	os.MkdirAll(targetDir, 0755)
 
 	// copy over bin now
-
 	// file to read from in current local dir
 	srcFile, err := os.Open(command)
 	if err != nil {
@@ -73,10 +69,6 @@ func isolateFs(jailpath string, command string){
 	// close files before moving on
 	destFile.Close()
 	srcFile.Close()
-
-	// create the /dev/null folder
-	// devnullpath := filepath.Join(jailpath, "/dev/null")
-	// os.MkdirAll(devnullpath, 0755)
 }
 
 // Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
