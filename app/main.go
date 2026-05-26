@@ -88,9 +88,9 @@ func main() {
 	}
 
 	cmd2 := exec.Command("ps", "aux")
-	output, err := cmd2.Output()
-	if err != nil {
-		log.Fatal(err)
+	output, err2 := cmd2.Output()
+	if err2 != nil {
+		log.Fatal(err2)
 	}
 	fmt.Println(string(output))
 
