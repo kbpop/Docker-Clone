@@ -118,7 +118,6 @@ func parentMode(){
 
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Cloneflags: syscall.CLONE_NEWPID | syscall.CLONE_NEWUSER | syscall.CLONE_NEWNS,
-		// YOU MISSED THESE MAPPINGS:
 		UidMappings: []syscall.SysProcIDMap{
 			{
 				ContainerID: 0,
@@ -160,6 +159,12 @@ func childMode(){
 
 	if err := syscall.Unshare(syscall.CLONE_FS); err != nil {
 		log.Fatalf("Unshare FS error: %v", err)
+	}
+
+	// stop mount propagation back to the host system
+	err := syscall.Mount("", "/", "", uintptr(syscall.MS_PRIVATE|syscall.MS_REC), "")
+	if err != nil {
+		log.Fatalf("Make private mount error: %v", err)
 	}
 
 	// create Chroot manually
