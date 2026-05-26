@@ -124,6 +124,7 @@ func parentMode(){
 		if exitError, ok := err.(*exec.ExitError); ok {
 			os.Exit(exitError.ExitCode())
 		}
+		log.Fatalf("Parent failed to run child: %v", err)
 		os.Exit(1)
 	}
 	
@@ -164,6 +165,7 @@ func childMode(){
 		if exitError, ok := err.(*exec.ExitError); ok {
 			os.Exit(exitError.ExitCode())
 		}
+		log.Fatalf("Child failed to run command: %v", err)
 		os.Exit(1)
 	}	
 	
