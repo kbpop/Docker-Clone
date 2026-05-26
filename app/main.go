@@ -29,7 +29,7 @@ func readDir(){
 	}
 }
 
-func isolateProcess(jailpath string){
+func isolateProcess(jailpath string, command string){
 	os.MkdirAll(jailpath, 0755)
 
 	// create local files that the command needs	
@@ -97,8 +97,6 @@ func main() {
 
 	cmd.Stderr = os.Stdout // create standard output for process
 	cmd.Stderr = os.Stderr // create error pipe for Go collection
-
-	
 
 	output, err := cmd.Output()
 	if err != nil {	
