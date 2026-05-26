@@ -92,7 +92,7 @@ func isolateProc(jailpath string){
 
 	// create where proc filesystem will live
 	procdir := filepath.Join(jailpath, "/dir/")
-	os.MkdirAll(targetDir, 0755)
+	os.MkdirAll(procdir, 0755)
 
 	src := "proc" // no actual hardware associated so dummy name
 	target := procdir
