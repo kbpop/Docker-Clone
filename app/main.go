@@ -77,13 +77,13 @@ func main() {
 	}
 	defer destFile.Close() // close file for later
 
-	_, err := io.Copy(destFile, srcFile)
+	_, err = io.Copy(destFile, srcFile)
 	if err != nil {
 		panic(err)
 	}
 
 	// assign local file permissions to new file 
-	fileInfo, err := os.Stat(command)
+	fileInfo, err = os.Stat(command)
 	err := os.Chmod(targetDir, fileInfo.Mode().Perm())
 
 	if err != nil {
