@@ -87,8 +87,8 @@ func main() {
 		Cloneflags: syscall.CLONE_NEWPID,
 	}
 
-	cmd := exec.Command("ps", "aux")
-	output, err := cmd.Output()
+	cmd2 := exec.Command("ps", "aux")
+	output, err := cmd2.Output()
 	if err != nil {
 		log.Fatal(err)
 	}
