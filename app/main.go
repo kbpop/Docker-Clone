@@ -88,6 +88,24 @@ func isolateFs(jailpath string, command string){
 	srcFile.Close()
 }
 
+func isolateProc(jailpath string){
+
+	// create where proc filesystem will live
+	procdir := filepath.Join(jailpath, "/dir/")
+	os.MkdirAll(targetDir, 0755)
+
+	src := "proc" // no actual hardware associated so dummy name
+	target := procdir
+	fstype := "proc" // create process filesystem
+	flags  := 0 // default options
+	data   := ""// doesn't require any extra options
+
+	err := syscall.Mount(src, target, fstype, flags, data)
+	if err != nil {
+		log.Fatalf("Mount failed: %v", err)
+	}
+}
+
 // Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
 func main() {
 	command := os.Args[3]
@@ -104,6 +122,7 @@ func main() {
 	}
 
 	isolateFs(jailpath, command)
+	isolateProc(jailpath)
 
 	cmd.Stdout = os.Stdout // create standard output for child process to talk through
 	cmd.Stderr = os.Stderr // create error output for child process to talk through
