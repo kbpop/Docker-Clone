@@ -73,8 +73,7 @@ func isolateProcess(jailpath string, command string){
 
 	// create the /dev/null folder
 	devnullpath := filepath.Join(jailpath, "/dev/null")
-	os.MkdirAll(devnullpath)
-
+	os.MkdirAll(devnullpath, 0755)
 }
 
 // Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
