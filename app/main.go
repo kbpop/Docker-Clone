@@ -149,12 +149,12 @@ func childMode(){
 
 	isolateProc()
 
+	cmd := exec.Command(command, args...)
+
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	env := os.Environ()
-	execArgs := append([]string{command}, args...)
-	err := syscall.Exec(command, execArgs, env)
+	err := cmd.Run()
 	if err != nil {	
 		 // fmt.Printf("Err: %v", err)
 		if exitError, ok := err.(*exec.ExitError); ok {
