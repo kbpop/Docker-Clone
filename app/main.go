@@ -89,6 +89,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	destFile.close()
+	srcFile.close()
 
 	output, err := cmd.Output()
 	if err != nil {	
