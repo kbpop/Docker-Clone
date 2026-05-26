@@ -46,7 +46,7 @@ func printProcs(){
 }
 
 // isolate filesystem 
-func isolateFs(jailpath string, command string): string {
+func isolateFs(jailpath string, command string) string {
 
 	hostpath, err := exec.LookPath(command)
 	if err != nil {
