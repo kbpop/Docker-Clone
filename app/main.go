@@ -158,7 +158,7 @@ func childMode(){
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	err = cmd.Run()
+	err := cmd.Run()
 	if err != nil {	
 		 // fmt.Printf("Err: %v", err)
 		if exitError, ok := err.(*exec.ExitError); ok {
