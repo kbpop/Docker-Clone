@@ -48,14 +48,20 @@ func printProcs(){
 // isolate filesystem 
 func isolateFs(jailpath string, command string){
 
+	hostpath, err := exec.LookPath(command)
+	if err != nil {
+		fmt.Printf("Command not found: %v\n", err)
+		os.Exit(1)
+	}
+
 	// create local files that the command needs	
-	newpath := filepath.Join(jailpath, command)
+	newpath := filepath.Join(jailpath, hostpath)
 	targetDir := filepath.Dir(newpath)
 	os.MkdirAll(targetDir, 0755)
 
 	// copy over bin now
 	// file to read from in current local dir
-	srcFile, err := os.Open(command)
+	srcFile, err := os.Open(hostpath)
 	if err != nil {
 		fmt.Printf("Err: %v", err)
 		os.Exit(1)
@@ -76,7 +82,7 @@ func isolateFs(jailpath string, command string){
 	}
 
 	// assign local file permissions to new file 
-	fileInfo, err := os.Stat(command)
+	fileInfo, err := os.Stat(hostpath)
 	err = os.Chmod(newpath, fileInfo.Mode().Perm())
 
 	if err != nil {
@@ -86,6 +92,7 @@ func isolateFs(jailpath string, command string){
 	// close files before moving on
 	destFile.Close()
 	srcFile.Close()
+	return hostpath
 }
 
 func isolateProc(){
@@ -140,7 +147,7 @@ func childMode(){
 
 	// isolate filesystem 
 	jailpath := "/tmp/docker_jail"
-	isolateFs(jailpath, command)
+	command = isolateFs(jailpath, command)
 
 		// create Chroot manually
 	if err := syscall.Chroot(jailpath); err != nil {
