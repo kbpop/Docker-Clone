@@ -4,208 +4,92 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"io"
-	"log"
-	"syscall"
 	"path/filepath"
+	"syscall"
 )
 
-// Ensures gofmt doesn't remove the imports above (feel free to remove this!)
-var _ = os.Args
-var _ = exec.Command
-
-func readDir(){
-	entries, err := os.ReadDir(".")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			fmt.Println("[DIR]", entry.Name())
-		} else {
-			fmt.Println("[FILE]", entry.Name())
-		}
-	}
+type Container struct {
+	Command string
+	Args    []string
+	RootFS  string
 }
 
-func printPid(){
-	pid := os.Getpid()
-	fmt.Printf("Current Process ID: %d\n", pid)
-}
-
-func printProcs(){
-	cmd := exec.Command("ps", "aux")
-	output, err := cmd.Output()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(string(output))	
-
-
-}
-
-// isolate filesystem 
-func isolateFs(jailpath string, command string) string {
-
-	hostpath, err := exec.LookPath(command)
-	if err != nil {
-		fmt.Printf("Command not found: %v\n", err)
-		os.Exit(1)
-	}
-
-	// create local files that the command needs	
-	newpath := filepath.Join(jailpath, hostpath)
-	targetDir := filepath.Dir(newpath)
-	os.MkdirAll(targetDir, 0755)
-
-	// copy over bin now
-	// file to read from in current local dir
-	srcFile, err := os.Open(hostpath)
-	if err != nil {
-		fmt.Printf("Err: %v", err)
-		os.Exit(1)
-	}
-	defer srcFile.Close() // close file for later
-
-	// file to write to
-	destFile, err := os.Create(newpath)
-	if err != nil {
-		fmt.Printf("Err creating destination file: %v\n", err)
-		os.Exit(1)
-	}
-	defer destFile.Close() // close file for later
-
-	_, err = io.Copy(destFile, srcFile)
-	if err != nil {
-		panic(err)
-	}
-
-	// assign local file permissions to new file 
-	fileInfo, err := os.Stat(hostpath)
-	err = os.Chmod(newpath, fileInfo.Mode().Perm())
-
-	if err != nil {
-		panic(err)
-	}
-
-	// close files before moving on
-	destFile.Close()
-	srcFile.Close()
-	return hostpath
-}
-
-func isolateProc(){
-
-	// create where proc filesystem will live
-	procdir := "/proc"
-	os.MkdirAll(procdir, 0755)
-
-	src := "proc" // no actual hardware associated so dummy name
-	target := procdir
-	fstype := "proc" // create process filesystem
-	// flags  := 0 // default options
-	data   := ""// doesn't require any extra options
-
-	err := syscall.Mount(src, target, fstype, 0, data)
-	if err != nil {
-		log.Fatalf("Mount failed: %v", err)
-	}
-}
-
-func parentMode(){
-	command := os.Args[3]
-	args := os.Args[4:]
-	childArgs := append([]string{"child", command},  args...)
-	cmd := exec.Command("/proc/self/exe", childArgs...)	
-
-	cmd.Stdin  = os.Stdin
+func (c *Container) Run() error {
+	cmd := exec.Command(c.Command, c.Args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Cloneflags: syscall.CLONE_NEWPID | syscall.CLONE_NEWNS,
+		Chroot:     c.RootFS,
+		Cloneflags: syscall.CLONE_NEWPID | syscall.CLONE_NEWNS | syscall.CLONE_NEWUSER,
+		UidMappings: []syscall.SysProcIDMap{
+			{ContainerID: 0, HostID: os.Getuid(), Size: 1},
+		},
+		GidMappings: []syscall.SysProcIDMap{
+			{ContainerID: 0, HostID: os.Getegid(), Size: 1},
+		},
 	}
 
-	if err := cmd.Run(); err != nil {
-		if exitError, ok := err.(*exec.ExitError); ok {
-			os.Exit(exitError.ExitCode())
-		}
-		log.Fatalf("Parent failed to run child: %v", err)
-		os.Exit(1)
-	}
-	
-	os.Exit(0)
-}
-
-func childMode(){
-	command := os.Args[2]
-	args := os.Args[3:]
-	
-	println("child-commands: ", args)
-	// create command executable
-
-	// isolate filesystem 
-	jailpath := "/tmp/docker_jail"
-	command = isolateFs(jailpath, command)
-
-		// create Chroot manually
-	if err := syscall.Chroot(jailpath); err != nil {
-		log.Fatalf("Chroot error: %v", err)
-	}
-	if err := syscall.Chdir("/"); err != nil {
-		log.Fatalf("Chdir error: %v", err)
-	}
-
-	isolateProc()
-
-	cmd := exec.Command(command, args...)
-
-	cmd.Stdin  = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	err := cmd.Run()
-	if err != nil {	
-		 // fmt.Printf("Err: %v", err)
-		if exitError, ok := err.(*exec.ExitError); ok {
-			os.Exit(exitError.ExitCode())
-		}
-		log.Fatalf("Child failed to run command: %v", err)
-		os.Exit(1)
-	}	
-	
-	os.Exit(0)
+	return cmd.Run()
 }
 
 // Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
 func main() {
-	// 1. Parse arguments (CodeCrafters passes: run <image> <command> <args...>)
 	command := os.Args[3]
-	args := os.Args[4:]
+	args := os.Args[4:len(os.Args)]
 
-	// 2. Setup your isolated filesystem (keep your existing isolateFs function!)
-	// Assuming isolateFs returns the path to the new root directory:
-	jailpath := "/tmp/docker_jail"
-	jailPath := isolateFs(jailpath, command) 
+	// Setup isolated filesystem
+	rootFSDir, err := setupRootFS(command)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error setting up root filesystem: %v\n", err)
+		os.Exit(1)
+	}
+	defer os.RemoveAll(rootFSDir)
 
-	// 3. Prepare the command
-	cmd := exec.Command(command, args...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	// 4. THE MAGIC: Let Go handle the Chroot and PID isolation in one step
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Chroot:     jailPath,
-		Cloneflags: syscall.CLONE_NEWPID,
+	container := &Container{
+		Command: command,
+		Args:    args,
+		RootFS:  rootFSDir,
 	}
 
-	// 5. Run the command directly
-	if err := cmd.Run(); err != nil {
-		if exitError, ok := err.(*exec.ExitError); ok {
-			os.Exit(exitError.ExitCode())
+	if err := container.Run(); err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			os.Exit(exitErr.ExitCode())
 		}
-		log.Fatalf("Command execution failed: %v", err)
+		fmt.Fprintf(os.Stderr, "Container execution failed: %v\n", err)
+		os.Exit(1)
 	}
+}
+
+func setupRootFS(src string) (string, error) {
+	dir, err := os.MkdirTemp("", "chroot")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temp dir: %w", err)
+	}
+
+	dest := filepath.Join(dir, src)
+
+	if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
+		return dir, fmt.Errorf("failed to create app directories: %w", err)
+	}
+	srcBytes, err := os.ReadFile(src)
+	if err != nil {
+		return dir, fmt.Errorf("failed to read source executable: %w", err)
+	}
+
+	if err := os.WriteFile(dest, srcBytes, 0755); err != nil {
+		return dir, fmt.Errorf("failed to copy executable to rootfs: %w", err)
+	}
+
+	devDir := filepath.Join(dir, "dev")
+	if err := os.MkdirAll(devDir, 0755); err != nil {
+		return dir, fmt.Errorf("failed to create /dev directory: %w", err)
+	}
+
+	devNull := filepath.Join(devDir, "null")
+	if err := os.WriteFile(devNull, []byte{}, 0644); err != nil {
+		return dir, fmt.Errorf("failed to create /dev/null: %w", err)
+	}
+
+	return dir, nil
 }
