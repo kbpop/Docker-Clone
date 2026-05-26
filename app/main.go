@@ -113,13 +113,23 @@ func isolateProc(){
 	}
 }
 
-func parentMode(){
+func parentMode() {
 	command := os.Args[3]
 	args := os.Args[4:]
-	childArgs := append([]string{"child", command},  args...)
-	cmd := exec.Command("/proc/self/exe", childArgs...)	
+	childArgs := append([]string{"child", command}, args...)
+	
+	// === THE CRITICAL FIX ===
+	// Go finds the actual absolute path to your compiled binary
+	exe, err := os.Executable()
+	if err != nil {
+		log.Fatalf("Failed to get executable: %v", err)
+	}
+	
+	// Execute the absolute path (e.g. /tmp/tmp.XYZ), NOT "/proc/self/exe"
+	cmd := exec.Command(exe, childArgs...)
+	// ========================
 
-	cmd.Stdin  = os.Stdin
+	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -134,7 +144,7 @@ func parentMode(){
 		log.Fatalf("Parent failed to run child: %v", err)
 		os.Exit(1)
 	}
-	
+
 	os.Exit(0)
 }
 
