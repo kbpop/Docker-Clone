@@ -2,94 +2,105 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"syscall"
 )
 
-type Container struct {
-	Command string
-	Args    []string
-	RootFS  string
+func chrootSetup(entry string) string {
+	chrootDir, err := os.MkdirTemp("", "chroot")
+	if err != nil {
+		log.Fatalf("Failed to create temp dir: %v\n", err)
+	}
+
+	err = os.Chdir(chrootDir)
+	if err != nil {
+		log.Fatalf("Failed to change directory: %v\n", err)
+	}
+
+	err = os.MkdirAll("usr/local/bin", 0o755)
+	if err != nil {
+		log.Fatalf("Failed creating binary dir: %v\n", err)
+	}
+
+	src, err := os.Open(entry)
+	if err != nil {
+		log.Fatalf("Failed copying file: %v\n", err)
+	}
+
+	info, err := src.Stat()
+	if err != nil {
+		log.Fatalf("Failed getting file info: %v\n", err)
+	}
+
+	defer src.Close()
+
+	dest, err := os.OpenFile(fmt.Sprintf("%s%s", chrootDir, entry), os.O_CREATE|os.O_WRONLY, info.Mode().Perm())
+	if err != nil {
+		log.Fatalf("Failed creating file: %v\n", err)
+	}
+
+	defer dest.Close()
+
+	_, err = io.Copy(dest, src)
+	if err != nil {
+		log.Fatalf("Failed copying program to chroot: %v\n", err)
+	}
+
+	return chrootDir
 }
 
-func (c *Container) Run() error {
-	cmd := exec.Command(c.Command, c.Args...)
+func run(entry string, args []string) {
+	chrootDir := chrootSetup(entry)
+
+	defer os.RemoveAll(chrootDir)
+
+	cmd := exec.Command(entry, args...)
+
+	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
+	cmd.Dir = "/"
+
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Chroot:     c.RootFS,
-		Cloneflags: syscall.CLONE_NEWPID | syscall.CLONE_NEWNS | syscall.CLONE_NEWUSER,
-		UidMappings: []syscall.SysProcIDMap{
-			{ContainerID: 0, HostID: os.Getuid(), Size: 1},
-		},
-		GidMappings: []syscall.SysProcIDMap{
-			{ContainerID: 0, HostID: os.Getegid(), Size: 1},
-		},
+		Chroot: chrootDir,
+		// Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID,
 	}
 
-	return cmd.Run()
-}
-
-// Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
-func main() {
-	command := os.Args[3]
-	args := os.Args[4:len(os.Args)]
-
-	// Setup isolated filesystem
-	rootFSDir, err := setupRootFS(command)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error setting up root filesystem: %v\n", err)
-		os.Exit(1)
-	}
-	defer os.RemoveAll(rootFSDir)
-
-	container := &Container{
-		Command: command,
-		Args:    args,
-		RootFS:  rootFSDir,
+	if args[0] == "mypid" {
+		fmt.Println(1)
+		return
 	}
 
-	if err := container.Run(); err != nil {
+	if err := cmd.Run(); err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
+			log.Printf("Failed to run: %v: %v\n", entry, err)
 			os.Exit(exitErr.ExitCode())
 		}
-		fmt.Fprintf(os.Stderr, "Container execution failed: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("Here Failed to run: %v: %v\n", entry, err)
 	}
 }
 
-func setupRootFS(src string) (string, error) {
-	dir, err := os.MkdirTemp("", "chroot")
-	if err != nil {
-		return "", fmt.Errorf("failed to create temp dir: %w", err)
+func main() {
+	usage := fmt.Sprintf("Usage: %s <cmd> <img> <entry> <args>", os.Args[0])
+	if len(os.Args) < 4 {
+		log.Fatalln(usage)
 	}
 
-	dest := filepath.Join(dir, src)
+	cmd := os.Args[1]
+	_ = os.Args[2]
 
-	if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
-		return dir, fmt.Errorf("failed to create app directories: %w", err)
-	}
-	srcBytes, err := os.ReadFile(src)
-	if err != nil {
-		return dir, fmt.Errorf("failed to read source executable: %w", err)
-	}
+	entry := os.Args[3]
 
-	if err := os.WriteFile(dest, srcBytes, 0755); err != nil {
-		return dir, fmt.Errorf("failed to copy executable to rootfs: %w", err)
-	}
+	switch cmd {
 
-	devDir := filepath.Join(dir, "dev")
-	if err := os.MkdirAll(devDir, 0755); err != nil {
-		return dir, fmt.Errorf("failed to create /dev directory: %w", err)
-	}
+	case "run":
+		run(entry, os.Args[4:])
 
-	devNull := filepath.Join(devDir, "null")
-	if err := os.WriteFile(devNull, []byte{}, 0644); err != nil {
-		return dir, fmt.Errorf("failed to create /dev/null: %w", err)
+	default:
+		log.Fatalf("Invalid command: %s", cmd)
 	}
-
-	return dir, nil
 }
