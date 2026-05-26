@@ -111,7 +111,7 @@ func parentMode(){
 	childArgs := append([]string{"child"}, args...)
 	cmd := exec.Command("/proc/self/exe", childArgs...)	
 
-	println("parent-command: ", childArgs[1])
+	println("parent-commands: ", childArgs)
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -131,7 +131,7 @@ func childMode(){
 	command := os.Args[2]
 	args := os.Args[3:]
 	
-	println("child-command: ", command)
+	println("child-commands: ", args)
 	// create command executable
 
 	// isolate filesystem 
