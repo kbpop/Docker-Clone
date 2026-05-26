@@ -106,28 +106,11 @@ func isolateProc(jailpath string){
 	}
 }
 
-// Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
-func main() {
-	command := os.Args[3]
-	args := os.Args[4:len(os.Args)]
-	
-	// create command executable
-	cmd := exec.Command(command, args...)
+func parentMode(){
+	cmd := exec.Command("/proc/self/exe", "child")	
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
-	// isolate filesystem 
-	jailpath := "/tmp/docker_jail"
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Chroot: jailpath, // used for filesystem isolation
-		Cloneflags: syscall.CLONE_NEWPID | syscall.CLONE_NEWUSER,
-	}
-
-	isolateFs(jailpath, command)
-
-	cmd.Stdout = os.Stdout // create standard output for child process to talk through
-	cmd.Stderr = os.Stderr // create error output for child process to talk through
-
-	err := cmd.Run()
-	isolateProc(jailpath)
 	if err != nil {	
 		 // fmt.Printf("Err: %v", err)
 		if exitError, ok := err.(*exec.ExitError); ok {
@@ -137,4 +120,41 @@ func main() {
 	}	
 	
 	os.Exit(0)
+}
+
+func childMode(){
+	command := os.Args[3]
+	args := os.Args[4:len(os.Args)]
+	
+	// create command executable
+	cmd := exec.Command(command, args...)
+
+	// isolate filesystem 
+	jailpath := "/tmp/docker_jail"
+
+	isolateFs(jailpath, command)
+	isolateProc(jailpath)
+	err := cmd.Run()
+	if err != nil {	
+		 // fmt.Printf("Err: %v", err)
+		if exitError, ok := err.(*exec.ExitError); ok {
+			os.Exit(exitError.ExitCode())
+		}
+		os.Exit(1)
+	}	
+	
+	os.Exit(0)
+}
+
+// Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
+func main() {
+
+	hierarchy := os.Args[1]
+
+	if(hierarchy == "child"){
+		childMode()
+		return
+	}
+
+	parentMode()
 }
