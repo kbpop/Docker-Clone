@@ -31,6 +31,7 @@ func readDir(){
 
 // isolate filesystem 
 func isolateFs(jailpath string, command string){
+
 	// create local files that the command needs	
 	newpath := filepath.Join(jailpath, command)
 	targetDir := filepath.Dir(newpath)
@@ -82,7 +83,8 @@ func main() {
 	// isolate filesystem 
 	jailpath := "/tmp/docker_jail"
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Chroot: jailpath,
+		Chroot: jailpath, // used for filesystem isolation
+		Cloneflags: syscall.CLONE_NEWPID
 	}
 
 	isolateFs(jailpath, command)
