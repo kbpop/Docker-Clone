@@ -153,7 +153,7 @@ func childMode(){
 	// cmd.Stderr = os.Stderr
 
 	env := os.Environ()
-
+	execArgs := append([]string{command}, args...)
 	err := syscall.Exec(command, execArgs, env)
 	if err != nil {	
 		 // fmt.Printf("Err: %v", err)
