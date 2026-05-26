@@ -69,12 +69,14 @@ func isolateFs(jailpath string, command string){
 	if err != nil {
 		panic(err)
 	}
+
+	// close files before moving on
 	destFile.Close()
 	srcFile.Close()
 
 	// create the /dev/null folder
-	devnullpath := filepath.Join(jailpath, "/dev/null")
-	os.MkdirAll(devnullpath, 0755)
+	// devnullpath := filepath.Join(jailpath, "/dev/null")
+	// os.MkdirAll(devnullpath, 0755)
 }
 
 // Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
@@ -93,8 +95,8 @@ func main() {
 
 	isolateFs(jailpath, command)
 
-	cmd.Stdout = os.Stdout // create standard output for process
-	cmd.Stderr = os.Stderr // create error pipe for Go collection
+	cmd.Stdout = os.Stdout // create standard output for child process to talk through
+	cmd.Stderr = os.Stderr // create error output for child process to talk through
 
 	err := cmd.Run()
 	if err != nil {	
