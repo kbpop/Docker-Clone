@@ -117,21 +117,7 @@ func parentMode(){
 	cmd.Stderr = os.Stderr
 
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Cloneflags: syscall.CLONE_NEWPID | syscall.CLONE_NEWUSER | syscall.CLONE_NEWNS,
-		UidMappings: []syscall.SysProcIDMap{
-			{
-				ContainerID: 0,
-				HostID:      os.Getuid(),
-				Size:        1,
-			},
-		},
-		GidMappings: []syscall.SysProcIDMap{
-			{
-				ContainerID: 0,
-				HostID:      os.Getgid(),
-				Size:        1,
-			},
-		},
+		Cloneflags: syscall.CLONE_NEWPID | syscall.CLONE_NEWNS,
 	}
 
 	if err := cmd.Run(); err != nil {
@@ -154,20 +140,9 @@ func childMode(){
 
 	// isolate filesystem 
 	jailpath := "/tmp/docker_jail"
-
 	isolateFs(jailpath, command)
 
-	if err := syscall.Unshare(syscall.CLONE_FS); err != nil {
-		log.Fatalf("Unshare FS error: %v", err)
-	}
-
-	// stop mount propagation back to the host system
-	err := syscall.Mount("", "/", "", uintptr(syscall.MS_PRIVATE|syscall.MS_REC), "")
-	if err != nil {
-		log.Fatalf("Make private mount error: %v", err)
-	}
-
-	// create Chroot manually
+		// create Chroot manually
 	if err := syscall.Chroot(jailpath); err != nil {
 		log.Fatalf("Chroot error: %v", err)
 	}
