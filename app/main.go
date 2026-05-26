@@ -29,30 +29,8 @@ func readDir(){
 	}
 }
 
-// Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
-func main() {
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
-	// fmt.Println("Logs from your program will appear here!")
-	jailpath := "/tmp/docker_jail"
-
+func isolateProcess(jailpath string){
 	os.MkdirAll(jailpath, 0755)
-
-	command := os.Args[3]
-	args := os.Args[4:len(os.Args)]
-	
-	// isolate filesystem 
-	// before isolation
-
-	// fmt.Printf("executing: %s", command)
-	cmd := exec.Command(command, args...)
-
-	// Give the child process the jailpath
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Chroot: jailpath,
-	}
-
-	cmd.Stderr = os.Stdout // create standard output for process
-	cmd.Stderr = os.Stderr // create error pipe for Go collection
 
 	// create local files that the command needs	
 	newpath := filepath.Join(jailpath, command)
@@ -92,6 +70,35 @@ func main() {
 	}
 	destFile.Close()
 	srcFile.Close()
+}
+
+// Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
+func main() {
+	// You can use print statements as follows for debugging, they'll be visible when running tests.
+	// fmt.Println("Logs from your program will appear here!")
+	
+
+	command := os.Args[3]
+	args := os.Args[4:len(os.Args)]
+	
+	// isolate filesystem 
+	// before isolation
+
+	// fmt.Printf("executing: %s", command)
+	cmd := exec.Command(command, args...)
+
+	jailpath := "/tmp/docker_jail"
+	// Give the child process the jailpath
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Chroot: jailpath,
+	}
+
+	isolateProcess(jailpath)
+
+	cmd.Stderr = os.Stdout // create standard output for process
+	cmd.Stderr = os.Stderr // create error pipe for Go collection
+
+	
 
 	output, err := cmd.Output()
 	if err != nil {	
