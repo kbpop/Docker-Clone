@@ -153,8 +153,8 @@ func childMode(){
 
 	isolateProc()
 
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	// cmd.Stdout = os.Stdout
+	// cmd.Stderr = os.Stderr
 
 	env := os.Environ()
 	execArgs := append([]string{command}, args...)
