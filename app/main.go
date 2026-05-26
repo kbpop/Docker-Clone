@@ -107,8 +107,9 @@ func isolateProc(){
 }
 
 func parentMode(){
-	args := os.Args[3:]
-	childArgs := append([]string{"child", os.Args[2]},  args...)
+	command := os.Args[3]
+	args := os.Args[4:]
+	childArgs := append([]string{"child", command},  args...)
 	cmd := exec.Command("/proc/self/exe", childArgs...)	
 
 	cmd.Stdin  = os.Stdin
