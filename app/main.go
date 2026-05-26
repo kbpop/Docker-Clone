@@ -118,7 +118,7 @@ func main() {
 	jailpath := "/tmp/docker_jail"
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Chroot: jailpath, // used for filesystem isolation
-		Cloneflags: syscall.CLONE_NEWPID,
+		Cloneflags: syscall.CLONE_NEWPID | syscall.CLONE_NEWUSER,
 	}
 
 	isolateFs(jailpath, command)
