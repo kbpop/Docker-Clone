@@ -84,7 +84,7 @@ func main() {
 
 	// assign local file permissions to new file 
 	fileInfo, err := os.Stat(command)
-	err = os.Chmod(targetDir, fileInfo.Mode().Perm())
+	err = os.Chmod(newpath, fileInfo.Mode().Perm())
 
 	if err != nil {
 		panic(err)
