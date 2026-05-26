@@ -97,10 +97,10 @@ func isolateProc(jailpath string){
 	src := "proc" // no actual hardware associated so dummy name
 	target := procdir
 	fstype := "proc" // create process filesystem
-	flags  := 0 // default options
+	// flags  := 0 // default options
 	data   := ""// doesn't require any extra options
 
-	err := syscall.Mount(src, target, fstype, flags, data)
+	err := syscall.Mount(src, target, fstype, 0, data)
 	if err != nil {
 		log.Fatalf("Mount failed: %v", err)
 	}
