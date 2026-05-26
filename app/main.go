@@ -108,7 +108,7 @@ func isolateProc(jailpath string){
 
 func parentMode(){
 	args := os.Args[4:len(os.Args)]
-	childArgs := append([]string{"child"}, existingArgs...)
+	childArgs := append([]string{"child"}, args...)
 	cmd := exec.Command("/proc/self/exe", childArgs...)	
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
