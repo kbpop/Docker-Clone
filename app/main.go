@@ -87,7 +87,12 @@ func main() {
 		Cloneflags: syscall.CLONE_NEWPID,
 	}
 
-	pid := os.Getpid()
+	cmd := exec.Command("ps", "aux")
+	output, err := cmd.Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(output))pid := os.Getpid()
 	fmt.Printf("Current Process ID: %d\n", pid)
 
 	isolateFs(jailpath, command)
