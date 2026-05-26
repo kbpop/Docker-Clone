@@ -29,6 +29,22 @@ func readDir(){
 	}
 }
 
+func printPid(){
+	pid := os.Getpid()
+	fmt.Printf("Current Process ID: %d\n", pid)
+}
+
+func printProcs(){
+	cmd := exec.Command("ps", "aux")
+	output, err := cmd.Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(output))	
+
+
+}
+
 // isolate filesystem 
 func isolateFs(jailpath string, command string){
 
@@ -86,13 +102,6 @@ func main() {
 		Chroot: jailpath, // used for filesystem isolation
 		Cloneflags: syscall.CLONE_NEWPID,
 	}
-
-	cmd2 := exec.Command("ps", "aux")
-	output, err2 := cmd2.Output()
-	if err2 != nil {
-		log.Fatal(err2)
-	}
-	fmt.Println(string(output))
 
 	isolateFs(jailpath, command)
 
