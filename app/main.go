@@ -121,6 +121,7 @@ func parentMode(){
 		Chroot: jailpath, // used for filesystem isolation
 		Cloneflags: syscall.CLONE_NEWPID | syscall.CLONE_NEWUSER,
 	}
+	isolateFs(jailpath, childArgs[1])
 
 	if err := cmd.Run(); err != nil {
 		os.Exit(1)
@@ -133,7 +134,7 @@ func childMode(){
 	command := os.Args[2]
 	args := os.Args[3:]
 	
-	println("command: %s", command)
+	println("child-command: ", command)
 	// create command executable
 	cmd := exec.Command(command, args...)
 
@@ -143,7 +144,6 @@ func childMode(){
 	// isolate filesystem 
 	jailpath := "/tmp/docker_jail"
 
-	isolateFs(jailpath, command)
 	isolateProc(jailpath)
 
 	err := cmd.Run()
