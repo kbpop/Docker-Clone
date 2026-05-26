@@ -139,10 +139,6 @@ func childMode(){
 
 	isolateFs(jailpath, command)
 
-	if err := syscall.Mount("", "/", "", syscall.MS_PRIVATE|syscall.MS_REC, ""); err != nil {
-		log.Fatalf("Failed to set mount propagation to private: %v", err)
-	}
-
 	// create Chroot manually
 	if err := syscall.Chroot(jailpath); err != nil {
 		log.Fatalf("Chroot error: %v", err)
@@ -153,13 +149,12 @@ func childMode(){
 
 	isolateProc()
 
-	// cmd.Stdout = os.Stdout
-	// cmd.Stderr = os.Stderr
+	cmd := exec.Command(command, args...)
 
-	env := os.Environ()
-	execArgs := append([]string{command}, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
-	err := syscall.Exec(command, execArgs, env)
+	err := cmd.Run()
 	if err != nil {	
 		 // fmt.Printf("Err: %v", err)
 		if exitError, ok := err.(*exec.ExitError); ok {
