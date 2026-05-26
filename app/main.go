@@ -65,7 +65,7 @@ func main() {
 	srcFile, err := os.Open(command)
 	if err != nil {
 		fmt.Printf("Err: %v", err)
-		os.exit(1)
+		os.Exit(1)
 	}
 	defer srcFile.Close() // close file for later
 
