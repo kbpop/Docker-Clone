@@ -113,23 +113,13 @@ func isolateProc(){
 	}
 }
 
-func parentMode() {
+func parentMode(){
 	command := os.Args[3]
 	args := os.Args[4:]
-	childArgs := append([]string{"child", command}, args...)
-	
-	// === THE CRITICAL FIX ===
-	// Go finds the actual absolute path to your compiled binary
-	exe, err := os.Executable()
-	if err != nil {
-		log.Fatalf("Failed to get executable: %v", err)
-	}
-	
-	// Execute the absolute path (e.g. /tmp/tmp.XYZ), NOT "/proc/self/exe"
-	cmd := exec.Command(exe, childArgs...)
-	// ========================
+	childArgs := append([]string{"child", command},  args...)
+	cmd := exec.Command("/proc/self/exe", childArgs...)	
 
-	cmd.Stdin = os.Stdin
+	cmd.Stdin  = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -144,7 +134,7 @@ func parentMode() {
 		log.Fatalf("Parent failed to run child: %v", err)
 		os.Exit(1)
 	}
-
+	
 	os.Exit(0)
 }
 
@@ -190,13 +180,31 @@ func childMode(){
 
 // Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
 func main() {
+	// 1. Parse arguments (CodeCrafters passes: run <image> <command> <args...>)
+	command := os.Args[3]
+	args := os.Args[4:]
 
-	hierarchy := os.Args[1]
+	// 2. Setup your isolated filesystem (keep your existing isolateFs function!)
+	// Assuming isolateFs returns the path to the new root directory:
+	jailPath := isolateFs(command) 
 
-	if(hierarchy == "child"){
-		childMode()
-		return
+	// 3. Prepare the command
+	cmd := exec.Command(command, args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	// 4. THE MAGIC: Let Go handle the Chroot and PID isolation in one step
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Chroot:     jailPath,
+		Cloneflags: syscall.CLONE_NEWPID,
 	}
 
-	parentMode()
+	// 5. Run the command directly
+	if err := cmd.Run(); err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			os.Exit(exitError.ExitCode())
+		}
+		log.Fatalf("Command execution failed: %v", err)
+	}
 }
