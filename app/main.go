@@ -99,7 +99,7 @@ func main() {
 
 	isolateProcess(jailpath, command)
 
-	cmd.Stderr = os.Stdout // create standard output for process
+	cmd.Stdout = os.Stdout // create standard output for process
 	cmd.Stderr = os.Stderr // create error pipe for Go collection
 
 	output, err := cmd.Output()
