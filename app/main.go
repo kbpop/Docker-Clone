@@ -116,12 +116,9 @@ func parentMode(){
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	jailpath := "/tmp/docker_jail"
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Chroot: jailpath, // used for filesystem isolation
-		Cloneflags: syscall.CLONE_NEWPID | syscall.CLONE_NEWUSER,
+		Cloneflags: syscall.CLONE_NEWPID | syscall.CLONE_NEWUSER | syscall.CLONE_NEWNS,
 	}
-	isolateFs(jailpath, childArgs[1])
 
 	if err := cmd.Run(); err != nil {
 		os.Exit(1)
@@ -136,15 +133,26 @@ func childMode(){
 	
 	println("child-command: ", command)
 	// create command executable
-	cmd := exec.Command(command, args...)
-
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 
 	// isolate filesystem 
 	jailpath := "/tmp/docker_jail"
 
+	isolateFs(jailpath, command)
+
+	// create Chroot manually
+	if err := syscall.Chroot(jailpath); err != nil {
+		log.Fatalf("Chroot error: %v", err)
+	}
+	if err := syscall.Chdir("/"); err != nil {
+		log.Fatalf("Chdir error: %v", err)
+	}
+
 	isolateProc(jailpath)
+
+	cmd := exec.Command(command, args...)
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
 	err := cmd.Run()
 	if err != nil {	
