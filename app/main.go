@@ -131,7 +131,7 @@ func childMode(){
 	command := os.Args[2]
 	args := os.Args[3:]
 	
-	printf("command: %s", command)
+	println("command: %s", command)
 	// create command executable
 	cmd := exec.Command(command, args...)
 
