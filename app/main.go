@@ -46,73 +46,67 @@ func printProcs(){
 }
 
 // isolate filesystem 
-func isolateFs(jailpath string, command string){
-
-	// create local files that the command needs	
+func isolateFs(jailpath string, command string) {
 	newpath := filepath.Join(jailpath, command)
 	targetDir := filepath.Dir(newpath)
 	os.MkdirAll(targetDir, 0755)
 
-	// copy over bin now
-	// file to read from in current local dir
 	srcFile, err := os.Open(command)
-	if err != nil {
-		fmt.Printf("Err: %v", err)
+	if err!= nil {
+		fmt.Printf("Err opening source command: %v\n", err)
 		os.Exit(1)
 	}
-	defer srcFile.Close() // close file for later
+	defer srcFile.Close()
 
-	// file to write to
 	destFile, err := os.Create(newpath)
-	if err != nil {
+	if err!= nil {
 		fmt.Printf("Err creating destination file: %v\n", err)
 		os.Exit(1)
 	}
-	defer destFile.Close() // close file for later
+	defer destFile.Close()
 
 	_, err = io.Copy(destFile, srcFile)
-	if err != nil {
+	if err!= nil {
 		panic(err)
 	}
 
-	// assign local file permissions to new file 
 	fileInfo, err := os.Stat(command)
+	if err!= nil {
+		fmt.Printf("Err reading permissions for %s: %v\n", command, err)
+		os.Exit(1)
+	}
+	
 	err = os.Chmod(newpath, fileInfo.Mode().Perm())
-
-	if err != nil {
+	if err!= nil {
 		panic(err)
 	}
-
-	// close files before moving on
-	destFile.Close()
-	srcFile.Close()
 }
 
-func isolateProc(){
-
-	// create where proc filesystem will live
+// isolateProc mounts the virtual /proc filesystem inside the jail
+func isolateProc() {
 	procdir := "/proc"
 	os.MkdirAll(procdir, 0755)
 
-	src := "proc" // no actual hardware associated so dummy name
+	src := "proc"
 	target := procdir
-	fstype := "proc" // create process filesystem
-	// flags  := 0 // default options
-	data   := ""// doesn't require any extra options
+	fstype := "proc"
+	data := ""
 
 	err := syscall.Mount(src, target, fstype, 0, data)
-	if err != nil {
+	if err!= nil {
 		log.Fatalf("Mount failed: %v", err)
 	}
 }
 
-func parentMode(){
-	command := os.Args[3]
-	args := os.Args[4:]
-	childArgs := append([]string{"child", command},  args...)
+// parentMode executes the host binary recursively within isolated namespaces
+func parentMode() {
+	args := os.Args[3:]
+	childArgs := append(string{"child"}, args...)
 	cmd := exec.Command("/proc/self/exe", childArgs...)	
 
-	cmd.Stdin  = os.Stdin
+	println("parent-commands: ", childArgs)
+
+	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -120,7 +114,7 @@ func parentMode(){
 		Cloneflags: syscall.CLONE_NEWPID | syscall.CLONE_NEWNS,
 	}
 
-	if err := cmd.Run(); err != nil {
+	if err := cmd.Run(); err!= nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			os.Exit(exitError.ExitCode())
 		}
@@ -130,23 +124,27 @@ func parentMode(){
 	os.Exit(0)
 }
 
-func childMode(){
-	command := os.Args[2]
+// childMode configures the localized jail, mounts /proc, and executes the user command
+func childMode() {
+	command := os.Args
 	args := os.Args[3:]
 	
 	println("child-commands: ", args)
-	// create command executable
-
-	// isolate filesystem 
+	
 	jailpath := "/tmp/docker_jail"
 
 	isolateFs(jailpath, command)
 
-	// create Chroot manually
-	if err := syscall.Chroot(jailpath); err != nil {
+	// Declare root mount propagation as private to block host leakages
+	err := syscall.Mount("", "/", "", syscall.MS_PRIVATE|syscall.MS_REC, "")
+	if err!= nil {
+		log.Fatalf("Mount propagation error: %v", err)
+	}
+
+	if err := syscall.Chroot(jailpath); err!= nil {
 		log.Fatalf("Chroot error: %v", err)
 	}
-	if err := syscall.Chdir("/"); err != nil {
+	if err := syscall.Chdir("/"); err!= nil {
 		log.Fatalf("Chdir error: %v", err)
 	}
 
@@ -154,13 +152,12 @@ func childMode(){
 
 	cmd := exec.Command(command, args...)
 
-	cmd.Stdin  = os.Stdin
+	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	err := cmd.Run()
-	if err != nil {	
-		 // fmt.Printf("Err: %v", err)
+	err = cmd.Run()
+	if err!= nil {	
 		if exitError, ok := err.(*exec.ExitError); ok {
 			os.Exit(exitError.ExitCode())
 		}
@@ -170,12 +167,10 @@ func childMode(){
 	os.Exit(0)
 }
 
-// Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
 func main() {
+	hierarchy := os.Args
 
-	hierarchy := os.Args[1]
-
-	if(hierarchy == "child"){
+	if hierarchy == "child" {
 		childMode()
 		return
 	}
