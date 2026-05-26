@@ -29,7 +29,8 @@ func readDir(){
 	}
 }
 
-func isolateProcess(jailpath string, command string){
+// isolate filesystem 
+func isolateFs(jailpath string, command string){
 	os.MkdirAll(jailpath, 0755)
 
 	// create local files that the command needs	
@@ -78,34 +79,26 @@ func isolateProcess(jailpath string, command string){
 
 // Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
 func main() {
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
-	// fmt.Println("Logs from your program will appear here!")
-	
-
 	command := os.Args[3]
 	args := os.Args[4:len(os.Args)]
 	
-	// isolate filesystem 
-	// before isolation
-
-	// fmt.Printf("executing: %s", command)
+	// create command executable
 	cmd := exec.Command(command, args...)
 
+	// isolate filesystem 
 	jailpath := "/tmp/docker_jail"
-	// Give the child process the jailpath
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Chroot: jailpath,
 	}
 
-	isolateProcess(jailpath, command)
+	isolateFs(jailpath, command)
 
 	cmd.Stdout = os.Stdout // create standard output for process
 	cmd.Stderr = os.Stderr // create error pipe for Go collection
 
-	output, err := cmd.Output()
+	err := cmd.Run()
 	if err != nil {	
 		 // fmt.Printf("Err: %v", err)
-
 		if exitError, ok := err.(*exec.ExitError); ok {
 			os.Exit(exitError.ExitCode())
 		}
