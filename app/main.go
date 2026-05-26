@@ -93,7 +93,7 @@ func main() {
 		Chroot: jailpath,
 	}
 
-	isolateProcess(jailpath)
+	isolateProcess(jailpath, command)
 
 	cmd.Stderr = os.Stdout // create standard output for process
 	cmd.Stderr = os.Stderr // create error pipe for Go collection
