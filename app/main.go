@@ -132,14 +132,11 @@ func childMode(){
 	args := os.Args[3:]
 	
 	println("child-command: ", command)
-	// create command executable
 
-	// isolate filesystem 
 	jailpath := "/tmp/docker_jail"
 
 	isolateFs(jailpath, command)
 
-	// create Chroot manually
 	if err := syscall.Chroot(jailpath); err != nil {
 		log.Fatalf("Chroot error: %v", err)
 	}
@@ -149,21 +146,20 @@ func childMode(){
 
 	isolateProc()
 
-	// cmd.Stdout = os.Stdout
-	// cmd.Stderr = os.Stderr
-
+	// --- REPLACE EXEC.COMMAND WITH SYSCALL.EXEC ---
+	
+	// Capture the current environment variables to pass into the container
 	env := os.Environ()
+
+	// syscall.Exec expects the command path as the first element of the arguments slice
 	execArgs := append([]string{command}, args...)
+
+	// This replaces the current Go process (PID 1) with the target binary.
+	// Standard input, output, and error remain bound to the host automatically.
 	err := syscall.Exec(command, execArgs, env)
 	if err != nil {	
-		 // fmt.Printf("Err: %v", err)
-		if exitError, ok := err.(*exec.ExitError); ok {
-			os.Exit(exitError.ExitCode())
-		}
-		os.Exit(1)
+		log.Fatalf("Exec error: %v", err)
 	}	
-	
-	os.Exit(0)
 }
 
 // Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
