@@ -110,6 +110,7 @@ func parentMode(){
 	args := os.Args[4:len(os.Args)]
 	childArgs := append([]string{"child"}, args...)
 	cmd := exec.Command("/proc/self/exe", childArgs...)	
+	
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -127,8 +128,8 @@ func parentMode(){
 }
 
 func childMode(){
-	command := os.Args[3]
-	args := os.Args[4:len(os.Args)]
+	command := os.Args[2]
+	args := os.Args[3:]
 	
 	// create command executable
 	cmd := exec.Command(command, args...)
@@ -141,6 +142,7 @@ func childMode(){
 
 	isolateFs(jailpath, command)
 	isolateProc(jailpath)
+
 	err := cmd.Run()
 	if err != nil {	
 		 // fmt.Printf("Err: %v", err)
