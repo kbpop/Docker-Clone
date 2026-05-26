@@ -143,6 +143,10 @@ func childMode(){
 
 	isolateFs(jailpath, command)
 
+	if err := syscall.Unshare(syscall.CLONE_FS); err != nil {
+		log.Fatalf("Unshare FS error: %v", err)
+	}
+
 	// create Chroot manually
 	if err := syscall.Chroot(jailpath); err != nil {
 		log.Fatalf("Chroot error: %v", err)
