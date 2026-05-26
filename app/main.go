@@ -92,8 +92,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(string(output))pid := os.Getpid()
-	fmt.Printf("Current Process ID: %d\n", pid)
+	fmt.Println(string(output))
 
 	isolateFs(jailpath, command)
 
