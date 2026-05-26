@@ -111,8 +111,6 @@ func parentMode(){
 	childArgs := append([]string{"child", os.Args[2]},  args...)
 	cmd := exec.Command("/proc/self/exe", childArgs...)	
 
-	println("parent-commands: ", childArgs)
-
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
