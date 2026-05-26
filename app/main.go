@@ -107,9 +107,15 @@ func isolateProc(jailpath string){
 }
 
 func parentMode(){
-	cmd := exec.Command("/proc/self/exe", "child")	
+	args := os.Args[4:len(os.Args)]
+	cmd := exec.Command("/proc/self/exe", "child", args...)	
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Chroot: jailpath, // used for filesystem isolation
+		Cloneflags: syscall.CLONE_NEWPID | syscall.CLONE_NEWUSER,
+	}
 
 	if err := cmd.Run(); err != nil {
 		os.Exit(1)
