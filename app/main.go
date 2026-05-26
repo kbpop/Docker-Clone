@@ -105,6 +105,5 @@ func main() {
 		os.Exit(1)
 	}	
 	
-	fmt.Print(string(output))
 	os.Exit(0)
 }
