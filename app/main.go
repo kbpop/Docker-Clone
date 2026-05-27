@@ -36,7 +36,7 @@ func getToken() string {
 func authenticationDance(){
 
 	// 1. Get a bearer token for the repository.
-	token := getToken()
+	getToken()
 
 	// 2. Get the image manifest.
 
