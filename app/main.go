@@ -33,7 +33,7 @@ func getToken() string {
 	return respAuth.Token
 }
 
-func authenticationDance(string image, string version){
+func authenticationDance(){
 
 	// 1. Get a bearer token for the repository.
 	token := getToken()
