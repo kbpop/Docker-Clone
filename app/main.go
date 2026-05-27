@@ -7,7 +7,47 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
+	"net/http"
+	"encoding/json"
 )
+
+type RespAuth struct {
+	Token    string    `json:"token"`
+	Expires_in int `json:"expires_in"`
+	Issued_at string `json:"issued_at"`
+}
+
+func getToken() string {
+	url := "https://auth.docker.io/token"
+
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Fatalf("Failed to pull data: %v", err)
+	}
+	defer resp.Body.Close()
+
+	var respAuth RespAuth
+	if err := json.NewDecoder(resp.Body).Decode(&respAuth); err != nil {
+    	log.Fatal(err)
+	}
+	return respAuth.Token
+}
+
+func authenticationDance(string image, string version){
+
+	// 1. Get a bearer token for the repository.
+	token := getToken()
+
+	// 2. Get the image manifest.
+
+	// 3. If the response in the previous step is a multi-architecture manifest list, you must do the following:
+	// 	o Parse the manifests[] array to locate the digest for your target platform (e.g., linux/amd64).
+	// 	o Get the image manifest using the located digest.
+
+	// 4. Check if the blob exists before downloading. The client should send a HEAD request for each layer digest.
+
+	// 5. Download each layer blob using the digest obtained from the manifest. The client should send a GET request for each layer digest.
+}
 
 func chrootSetup(entry string) string {
 	chrootDir, err := os.MkdirTemp("", "chroot")
@@ -49,6 +89,8 @@ func chrootSetup(entry string) string {
 		log.Fatalf("Failed copying program to chroot: %v\n", err)
 	}
 
+	// pull the image files in
+
 	return chrootDir
 }
 
@@ -82,6 +124,12 @@ func run(entry string, args []string) {
 		}
 		log.Fatalf("Here Failed to run: %v: %v\n", entry, err)
 	}
+
+	println("arg0 %s", args[0])
+	println("arg1 %s", args[1])
+	println("arg2 %s", args[2])
+	println("arg3 %s", args[3])
+	// authenticationDance()	
 }
 
 func main() {
@@ -94,6 +142,7 @@ func main() {
 	_ = os.Args[2]
 
 	entry := os.Args[3]
+
 
 	switch cmd {
 
