@@ -33,9 +33,10 @@ func getToken() string {
 	return respAuth.Token
 }
 
-func authenticationDance(){
+func authenticationDance(string image){
 
 	// 1. Get a bearer token for the repository.
+	printf("image: %s", image)
 	getToken()
 
 	// 2. Get the image manifest.
@@ -94,7 +95,7 @@ func chrootSetup(entry string) string {
 	return chrootDir
 }
 
-func run(entry string, args []string) {
+func run(entry string, args []string, string image) {
 	chrootDir := chrootSetup(entry)
 
 	defer os.RemoveAll(chrootDir)
@@ -125,11 +126,7 @@ func run(entry string, args []string) {
 		log.Fatalf("Here Failed to run: %v: %v\n", entry, err)
 	}
 
-	println("arg0 %s", args[0])
-	println("arg1 %s", args[1])
-	println("arg2 %s", args[2])
-	println("arg3 %s", args[3])
-	// authenticationDance()	
+	authenticationDance(image)	
 }
 
 func main() {
@@ -139,7 +136,7 @@ func main() {
 	}
 
 	cmd := os.Args[1]
-	_ = os.Args[2]
+	image = os.Args[2]
 
 	entry := os.Args[3]
 
@@ -147,7 +144,7 @@ func main() {
 	switch cmd {
 
 	case "run":
-		run(entry, os.Args[4:])
+		run(entry, os.Args[4:], image)
 
 	default:
 		log.Fatalf("Invalid command: %s", cmd)
