@@ -1,152 +1,181 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"syscall"
-	"net/http"
-	"encoding/json"
 )
 
-type RespAuth struct {
-	Token    string    `json:"token"`
-	Expires_in int `json:"expires_in"`
-	Issued_at string `json:"issued_at"`
+type TokenResponse struct {
+	Token       string `json:"token"`
+	AccessToken string `json:"access_token"`
+	Expires     int    `json:"expires_in"`
+	IssuedAt    string `json:"issued_at"`
 }
 
-func getToken() string {
-	url := "https://auth.docker.io/token"
-
-	resp, err := http.Get(url)
-	if err != nil {
-		log.Fatalf("Failed to pull data: %v", err)
-	}
-	defer resp.Body.Close()
-
-	var respAuth RespAuth
-	if err := json.NewDecoder(resp.Body).Decode(&respAuth); err != nil {
-    	log.Fatal(err)
-	}
-	return respAuth.Token
+type ManiFest struct {
+	Name     string     `json:"name"`
+	Tag      string     `json:"tag"`
+	FSLayers []fsLayers `json:"fsLayers"`
 }
 
-func authenticationDance(string image){
-
-	// 1. Get a bearer token for the repository.
-	printf("image: %s", image)
-	getToken()
-
-	// 2. Get the image manifest.
-
-	// 3. If the response in the previous step is a multi-architecture manifest list, you must do the following:
-	// 	o Parse the manifests[] array to locate the digest for your target platform (e.g., linux/amd64).
-	// 	o Get the image manifest using the located digest.
-
-	// 4. Check if the blob exists before downloading. The client should send a HEAD request for each layer digest.
-
-	// 5. Download each layer blob using the digest obtained from the manifest. The client should send a GET request for each layer digest.
+type fsLayers struct {
+	BlobSum string `json:"blobSum"`
 }
 
-func chrootSetup(entry string) string {
-	chrootDir, err := os.MkdirTemp("", "chroot")
-	if err != nil {
-		log.Fatalf("Failed to create temp dir: %v\n", err)
+// Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
+
+func main() {
+	img := os.Args[2]
+	split := strings.Split(img, ":")
+
+	repo := "library"
+	image := split[0]
+
+	tag := "latest"
+	if len(split) == 2 {
+		tag = split[1]
 	}
 
-	err = os.Chdir(chrootDir)
+	request, err := http.NewRequest("GET", fmt.Sprintf("https://auth.docker.io/token?service=registry.docker.io&scope=repository:%s:pull", repo+"/"+image), nil)
 	if err != nil {
-		log.Fatalf("Failed to change directory: %v\n", err)
+		fmt.Printf("ERR!! %+v", err)
 	}
 
-	err = os.MkdirAll("usr/local/bin", 0o755)
+	request.Header.Add("Accept", "application/json")
+	request.Header.Add("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(request)
+
+	var result TokenResponse
+	json.NewDecoder(resp.Body).Decode(&result)
+
+	// fmt.Printf("\n\nTOKEN => %+v\n\n", result.Token)
+
+	manifestReq, err := http.NewRequest("GET", fmt.Sprintf("https://registry.hub.docker.com/v2/%s/manifests/%s", repo+"/"+image, tag), nil)
 	if err != nil {
-		log.Fatalf("Failed creating binary dir: %v\n", err)
+		fmt.Printf("ERR!! %+v", err)
 	}
 
-	src, err := os.Open(entry)
+	manifestReq.Header.Add("Authorization", "Bearer "+strings.TrimSpace(result.Token))
+	manifestReq.Header.Add("Accept", "application/vnd.docker.distribution.manifest.list.v1+json")
+
+	mani, err := http.DefaultClient.Do(manifestReq)
 	if err != nil {
-		log.Fatalf("Failed copying file: %v\n", err)
+		fmt.Printf("ERRRR => %+v", err)
 	}
 
-	info, err := src.Stat()
-	if err != nil {
-		log.Fatalf("Failed getting file info: %v\n", err)
-	}
+	var manifest ManiFest
+	json.NewDecoder(mani.Body).Decode(&manifest)
 
-	defer src.Close()
+	command := os.Args[3]
+	args := os.Args[4:len(os.Args)]
 
-	dest, err := os.OpenFile(fmt.Sprintf("%s%s", chrootDir, entry), os.O_CREATE|os.O_WRONLY, info.Mode().Perm())
-	if err != nil {
-		log.Fatalf("Failed creating file: %v\n", err)
-	}
-
-	defer dest.Close()
-
-	_, err = io.Copy(dest, src)
-	if err != nil {
-		log.Fatalf("Failed copying program to chroot: %v\n", err)
-	}
-
-	// pull the image files in
-
-	return chrootDir
-}
-
-func run(entry string, args []string, string image) {
-	chrootDir := chrootSetup(entry)
-
-	defer os.RemoveAll(chrootDir)
-
-	cmd := exec.Command(entry, args...)
-
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	cmd.Dir = "/"
-
+	cmd := exec.Command(command, args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Chroot: chrootDir,
-		// Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID,
+		// Cloneflags: syscall.CLONE_NEWPID,
 	}
 
-	if args[0] == "mypid" {
-		fmt.Println(1)
+	if err := os.MkdirAll("tmp_dir/dev/null", os.ModePerm); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := os.MkdirAll("tmp_dir/usr/local/bin/", os.ModePerm); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := os.MkdirAll("tmp_dir/usr/bin/", os.ModePerm); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := os.MkdirAll("tmp_dir/bin/", os.ModePerm); err != nil {
+		log.Fatal(err)
+	}
+
+	defer os.RemoveAll("tmp_dir/")
+
+	input, err := ioutil.ReadFile(command)
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
 
-	if err := cmd.Run(); err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			log.Printf("Failed to run: %v: %v\n", entry, err)
-			os.Exit(exitErr.ExitCode())
+	err = ioutil.WriteFile("tmp_dir/usr/local/bin/docker-explorer", input, 0777)
+	if err != nil {
+		fmt.Println("Error creating", "tmp_dir/usr/local/bin/docker-explorer")
+		fmt.Println(err)
+		return
+	}
+
+	for _, value := range manifest.FSLayers {
+		req, err := http.NewRequest("GET", "https://registry-1.docker.io/v2/library/"+image+"/blobs/"+value.BlobSum, nil)
+		if err != nil {
+			fmt.Println("er1")
 		}
-		log.Fatalf("Here Failed to run: %v: %v\n", entry, err)
+
+		req.Header.Add("Authorization", "Bearer "+strings.TrimSpace(result.Token))
+
+		resp, err = http.DefaultClient.Do(req)
+		if err != nil {
+			fmt.Println("er2")
+		}
+		defer resp.Body.Close()
+
+		f, e := os.Create("tmp_dir/output")
+		if e != nil {
+			panic(e)
+		}
+		defer f.Close()
+		f.ReadFrom(resp.Body)
+
+		_, err = exec.Command("tar", "xf", "tmp_dir/output", "-C", "tmp_dir/").Output()
+		if err != nil {
+			fmt.Printf("OUT ERR untar => %+v", err)
+		}
+
+		// fmt.Printf("output => %+v", out)
+
+		os.RemoveAll("tmp_dir/output")
 	}
 
-	authenticationDance(image)	
-}
-
-func main() {
-	usage := fmt.Sprintf("Usage: %s <cmd> <img> <entry> <args>", os.Args[0])
-	if len(os.Args) < 4 {
-		log.Fatalln(usage)
+	if err := syscall.Chroot("tmp_dir/"); err != nil {
+		log.Fatal(err)
 	}
 
-	cmd := os.Args[1]
-	image = os.Args[2]
+	stdOutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	entry := os.Args[3]
+	stdErrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	if err := cmd.Start(); err != nil {
+		log.Fatal(err)
+	}
 
-	switch cmd {
+	stdOut, _ := io.ReadAll(stdOutPipe)
+	if string(stdOut) != "" {
+		fmt.Printf("%s", stdOut)
+	}
 
-	case "run":
-		run(entry, os.Args[4:], image)
+	stdErr, _ := io.ReadAll(stdErrPipe)
+	if string(stdErr) != "" {
+		os.Stderr.WriteString(string(stdErr))
+	}
 
-	default:
-		log.Fatalf("Invalid command: %s", cmd)
+	if err := cmd.Wait(); err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			os.Exit(exitError.ExitCode())
+		}
 	}
 }
